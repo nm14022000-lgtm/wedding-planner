@@ -1419,7 +1419,23 @@ function doEmailLogin() {
 }
 function doGoogleLogin() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(err => showAuthError(err.message));
+  const isMobile = /iphone|ipad|ipod|android/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    // Popups + sessionStorage are unreliable on mobile Safari / in-app browsers.
+    // Redirect flow is far more robust there.
+    auth.signInWithRedirect(provider).catch(err => showAuthError(err.message));
+  } else {
+    auth.signInWithPopup(provider).catch(err => {
+      // If popup fails for any storage/browser reason, fall back to redirect.
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/web-storage-unsupported' ||
+          err.code === 'auth/operation-not-supported-in-this-environment' || err.message.includes('initial state')) {
+        auth.signInWithRedirect(provider).catch(e2 => showAuthError(e2.message));
+      } else {
+        showAuthError(err.message);
+      }
+    });
+  }
 }
 function signOutUser() {
   if (householdUnsub) { householdUnsub(); householdUnsub = null; }
@@ -1544,6 +1560,12 @@ function copyInviteCode(code) {
 
 // ─── AUTH STATE LISTENER (entry point) ────────────────────────────
 renderAuthCard();
+
+// Surface any error from a completed signInWithRedirect flow (e.g. account-exists-with-different-credential)
+auth.getRedirectResult().catch(err => {
+  if (err && err.code) showAuthError(err.message);
+});
+
 auth.onAuthStateChanged(user => {
   currentUser = user;
   if (householdUnsub) { householdUnsub(); householdUnsub = null; }
