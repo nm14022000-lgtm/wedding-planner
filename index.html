@@ -16,9 +16,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --rose: #c0627a;
-    --rose-light: #f7e8ed;
-    --rose-mid: #e8b4c0;
+    --rose: #2f7a5c;
+    --rose-light: #e6f2ec;
+    --rose-mid: #7cb89d;
     --plum: #3a1f5c;
     --plum-mid: #7a4fa8;
     --plum-light: #f0e8fa;
@@ -27,7 +27,7 @@
     --cream: #fdfaf6;
     --white: #ffffff;
     --gray: #8a7a8a;
-    --border: #e8dff0;
+    --border: #e2ded9;
     --shadow: 0 4px 20px rgba(60, 30, 90, 0.05);
     --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   }
@@ -346,6 +346,42 @@
   .timeline-due.overdue-text { color: #c0392b; }
   .timeline-cat-badge { background: var(--plum-light); color: var(--plum-mid); padding: 2px 10px; border-radius: 20px; font-weight: 700; font-size: 11.5px; }
 
+  /* FUNCTION PILLS */
+  .function-pills { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0; }
+  .function-pill {
+    border: 1.5px solid var(--border); background: var(--white); color: var(--plum-mid);
+    padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: var(--transition); font-family: 'Lato', sans-serif; display: flex; align-items: center; gap: 6px;
+  }
+  .function-pill .cnt { background: var(--plum-light); border-radius: 10px; padding: 1px 7px; font-size: 11px; }
+  .function-pill.active { background: var(--rose); border-color: var(--rose); color: var(--white); }
+  .function-pill.active .cnt { background: rgba(255,255,255,0.25); color: var(--white); }
+  .function-pill:hover { border-color: var(--rose-mid); }
+
+  /* KANBAN BOARD */
+  .kanban-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+  .kanban-col { background: var(--cream); border-radius: 16px; padding: 14px; min-height: 80px; }
+  .kanban-col-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-weight: 700; color: var(--plum); font-size: 14px; font-family: 'Lato', sans-serif; }
+  .kanban-col-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .kanban-col-count { margin-left: auto; background: var(--white); border-radius: 10px; padding: 1px 9px; font-size: 12px; color: var(--gray); }
+  .kanban-card {
+    background: var(--white); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 10px; box-shadow: var(--shadow); transition: var(--transition);
+  }
+  .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(60,30,90,0.08); }
+  .kanban-card .kc-title { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--plum); font-size: 14.5px; margin-bottom: 6px; }
+  .kanban-card .kc-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11.5px; color: var(--gray); margin-bottom: 8px; }
+  .kanban-card .kc-due { font-weight: 700; }
+  .kanban-card .kc-due.overdue-text { color: #c0392b; }
+  .kanban-card .kc-func-badge { background: var(--plum-light); color: var(--plum-mid); padding: 2px 9px; border-radius: 20px; font-weight: 700; }
+  .kc-priority { padding: 2px 9px; border-radius: 20px; font-weight: 700; font-size: 11px; }
+  .kc-priority.High { background: #fde8e8; color: #c0392b; }
+  .kc-priority.Medium { background: var(--gold-light); color: #a87c0f; }
+  .kc-priority.Low { background: var(--rose-light); color: var(--rose); }
+  .kanban-card .kc-actions { display: flex; align-items: center; gap: 8px; }
+  .kc-status-select { flex: 1; padding: 6px 8px; font-size: 12px; border-radius: 8px; }
+  @media (max-width: 720px) { .kanban-board { grid-template-columns: 1fr; } }
+
   /* UPLOAD BTN */
   .upload-btn {
     background: var(--plum-light); color: var(--plum-mid); border: 1px dashed var(--plum-mid);
@@ -467,10 +503,10 @@ const PAGES = [
 
 const CATEGORY_PAGES = PAGES.filter(p => !['home','budget','moodboard','guestlist','timeline'].includes(p.id));
 const PAGE_COLORS = {
-  venue:'#f0e8fa', event:'#fde8d8', photography:'#d8edf5',
+  venue:'#f0e8fa', event:'#fdeed8', photography:'#d8edf5',
   cinematography:'#d8f5f0',
-  makeup:'#fde8f0', otherplans:'#f5f0d8', bridecloth:'#f5d8d8',
-  mencloth:'#d8d8f5'
+  makeup:'#ece0f5', otherplans:'#f5f0d8', bridecloth:'#faf0d8',
+  mencloth:'#e2e2f5'
 };
 
 function uid() { return Math.random().toString(36).slice(2,9); }
@@ -1255,38 +1291,69 @@ function deleteGuest(id) {
   setData('guestlist', getData('guestlist').filter(g=>g.id!==id));
 }
 
-// ─── TIMELINE / CHECKLIST PAGE ────────────────────────────────────
-const TIMELINE_CATEGORIES = ['Venue','Attire','Vendors','Legal & Docs','Invitations','Beauty','Logistics','Other'];
+// ─── CHECKLIST PAGE (function-wise Kanban board) ──────────────────
+const WEDDING_FUNCTIONS = ['Mehendi','Haldi','Nikah','Reception','Engagement','General'];
+const STATUS_COLS = [
+  { id:'Not Started', dot:'#c9a84c' },
+  { id:'In Progress', dot:'#7a4fa8' },
+  { id:'Done', dot:'#2f7a5c' },
+];
+let activeFunctionFilter = 'All';
+
+// Normalize a stored task to the new shape (handles old data: done/category -> status/function)
+function normalizeTask(t) {
+  const status = t.status || (t.done ? 'Done' : 'Not Started');
+  const func = t.function || t.category || 'General';
+  return { ...t, status, function: func, priority: t.priority || 'Medium' };
+}
 
 function renderTimelinePage() {
   const el = document.getElementById('page_timeline');
-  const tasks = getData('timeline');
+  const tasks = getData('timeline').map(normalizeTask);
   const today = new Date().toISOString().slice(0,10);
-  const sorted = [...tasks].sort((a,b) => {
-    if (!!a.done !== !!b.done) return a.done ? 1 : -1;
-    return (a.dueDate||'9999').localeCompare(b.dueDate||'9999');
-  });
-  const doneCount = tasks.filter(t=>t.done).length;
+  const doneCount = tasks.filter(t=>t.status==='Done').length;
   const pct = tasks.length ? Math.round((doneCount/tasks.length)*100) : 0;
 
-  const rows = sorted.map(t => {
-    const overdue = !t.done && t.dueDate && t.dueDate < today;
-    return `
-    <div class="timeline-item ${t.done?'done':''} ${overdue?'overdue':''}">
-      <input type="checkbox" class="timeline-check" ${t.done?'checked':''} onchange="toggleTaskDone('${t.id}',this.checked)">
-      <div class="timeline-body">
-        <div class="timeline-task">${t.task}</div>
-        <div class="timeline-meta">
-          ${t.dueDate?`<span class="timeline-due ${overdue?'overdue-text':''}">📅 ${t.dueDate}${overdue?' (overdue)':''}</span>`:''}
-          ${t.category?`<span class="timeline-cat-badge">${t.category}</span>`:''}
+  // Build function pill list: presets first, then any custom functions found in data
+  const usedFuncs = [...new Set(tasks.map(t=>t.function))];
+  const allFuncs = [...WEDDING_FUNCTIONS, ...usedFuncs.filter(f=>!WEDDING_FUNCTIONS.includes(f))];
+  if (!allFuncs.includes(activeFunctionFilter) && activeFunctionFilter !== 'All') activeFunctionFilter = 'All';
+
+  const pills = ['All', ...allFuncs].map(f => {
+    const count = f==='All' ? tasks.length : tasks.filter(t=>t.function===f).length;
+    return `<button class="function-pill ${activeFunctionFilter===f?'active':''}" onclick="setFunctionFilter('${f}')">${f} <span class="cnt">${count}</span></button>`;
+  }).join('');
+
+  const visible = activeFunctionFilter==='All' ? tasks : tasks.filter(t=>t.function===activeFunctionFilter);
+
+  const cols = STATUS_COLS.map(col => {
+    const colTasks = visible.filter(t=>t.status===col.id)
+      .sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
+    const cards = colTasks.map(t => {
+      const overdue = t.status!=='Done' && t.dueDate && t.dueDate < today;
+      return `
+      <div class="kanban-card">
+        <div class="kc-title">${t.task}</div>
+        <div class="kc-meta">
+          ${activeFunctionFilter==='All' ? `<span class="kc-func-badge">${t.function}</span>` : ''}
+          <span class="kc-priority ${t.priority}">${t.priority}</span>
+          ${t.dueDate?`<span class="kc-due ${overdue?'overdue-text':''}">📅 ${t.dueDate}${overdue?' overdue':''}</span>`:''}
         </div>
-        ${t.notes?`<div class="entry-notes">${t.notes}</div>`:''}
-      </div>
-      <div class="entry-actions">
-        <button class="btn-icon btn-edit" onclick="showEditTaskForm('${t.id}')">✏️</button>
-        <button class="btn-icon btn-delete" onclick="deleteTask('${t.id}')">🗑️</button>
-      </div>
-    </div>`;
+        ${t.notes?`<div class="entry-notes" style="margin-bottom:8px">${t.notes}</div>`:''}
+        <div class="kc-actions">
+          <select class="kc-status-select" onchange="updateTaskField('${t.id}','status',this.value)">
+            ${STATUS_COLS.map(c=>`<option value="${c.id}" ${t.status===c.id?'selected':''}>${c.id}</option>`).join('')}
+          </select>
+          <button class="btn-icon btn-edit" onclick="showEditTaskForm('${t.id}')">✏️</button>
+          <button class="btn-icon btn-delete" onclick="deleteTask('${t.id}')">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+    return `
+      <div class="kanban-col">
+        <div class="kanban-col-head"><span class="kanban-col-dot" style="background:${col.dot}"></span>${col.id}<span class="kanban-col-count">${colTasks.length}</span></div>
+        ${cards || '<div style="font-size:12.5px;color:var(--gray);text-align:center;padding:14px 0">No tasks</div>'}
+      </div>`;
   }).join('');
 
   el.innerHTML = `
@@ -1297,7 +1364,7 @@ function renderTimelinePage() {
       <input type="file" id="importFile5" accept=".json" style="display:none" onchange="importData(event)">
     </div>
     <div class="page-header" style="background:linear-gradient(135deg,#fdf0d8 0%,#fff 100%);border:1px solid rgba(200,160,80,0.2)">
-      <div><h2>✅ Wedding Checklist</h2><div class="meta">${doneCount} of ${tasks.length} tasks done</div></div>
+      <div><h2>✅ Wedding Checklist</h2><div class="meta">${doneCount} of ${tasks.length} tasks done, organized by function</div></div>
       <button class="btn-primary" onclick="showAddTaskForm()">+ Add Task</button>
     </div>
     ${tasks.length>0?`
@@ -1305,35 +1372,57 @@ function renderTimelinePage() {
       <div class="progress-labels"><span>Overall progress</span><span>${pct}%</span></div>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
     </div>`:''}
+    <div class="function-pills">${pills}</div>
     <div id="task_form"></div>
     ${tasks.length===0
-      ? '<div class="empty"><div class="empty-icon">✅</div><p>No tasks yet. Add your first wedding to-do!</p></div>'
-      : rows
+      ? '<div class="empty"><div class="empty-icon">✅</div><p>No tasks yet. Add your first wedding to-do, grouped by function like Mehendi, Haldi, Nikah, Reception...</p></div>'
+      : `<div class="kanban-board">${cols}</div>`
     }`;
 }
 
-function toggleTaskDone(id, done) {
-  setData('timeline', getData('timeline').map(t => t.id===id ? {...t, done} : t));
+function setFunctionFilter(f) {
+  activeFunctionFilter = f;
+  renderTimelinePage();
 }
+
+function updateTaskField(id, field, value) {
+  const tasks = getData('timeline').map(normalizeTask).map(t => t.id===id ? {...t, [field]: value} : t);
+  setData('timeline', tasks);
+}
+
 function showAddTaskForm() {
   document.getElementById('task_form').innerHTML = taskFormHTML(null);
 }
 function showEditTaskForm(id) {
-  const task = getData('timeline').find(t=>t.id===id);
+  const task = getData('timeline').map(normalizeTask).find(t=>t.id===id);
   if (!task) return;
   document.getElementById('task_form').innerHTML = taskFormHTML(task);
 }
 function taskFormHTML(t) {
   t = t || {};
+  const presetFunc = WEDDING_FUNCTIONS.includes(t.function) || !t.function;
   return `
     <div class="form-box">
       <div class="form-grid">
-        <div class="form-full"><label>Task *</label><input type="text" id="t_task" value="${t.task||''}" placeholder="e.g. Book the venue"></div>
+        <div class="form-full"><label>Task *</label><input type="text" id="t_task" value="${t.task||''}" placeholder="e.g. Book the mehendi artist"></div>
+        <div><label>Function / Event</label>
+          <select id="t_func">
+            ${WEDDING_FUNCTIONS.map(f=>`<option value="${f}" ${t.function===f?'selected':''}>${f}</option>`).join('')}
+            <option value="__custom__" ${!presetFunc?'selected':''}>Custom...</option>
+          </select>
+          <input type="text" id="t_func_custom" value="${!presetFunc?t.function:''}" placeholder="Custom function name" style="margin-top:8px;${presetFunc?'display:none':''}">
+        </div>
+        <div><label>Priority</label>
+          <select id="t_priority">
+            <option value="Low" ${t.priority==='Low'?'selected':''}>Low</option>
+            <option value="Medium" ${(!t.priority||t.priority==='Medium')?'selected':''}>Medium</option>
+            <option value="High" ${t.priority==='High'?'selected':''}>High</option>
+          </select>
+        </div>
         <div><label>Due Date</label><input type="date" id="t_due" value="${t.dueDate||''}"></div>
-        <div><label>Category</label>
-          <select id="t_cat">
-            <option value="">None</option>
-            ${TIMELINE_CATEGORIES.map(c=>`<option value="${c}" ${t.category===c?'selected':''}>${c}</option>`).join('')}
+        <div><label>Status</label>
+          <select id="t_status">
+            ${STATUS_COLS.map(c=>`<option value="${c.id}" ${t.status===c.id?'selected':''}>${c.id}</option>`).join('')}
           </select>
         </div>
         <div class="form-full"><label>Notes</label><input type="text" id="t_notes" value="${t.notes||''}" placeholder="Any note..."></div>
@@ -1344,19 +1433,26 @@ function taskFormHTML(t) {
       </div>
     </div>`;
 }
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.id === 't_func') {
+    document.getElementById('t_func_custom').style.display = e.target.value==='__custom__' ? 'block' : 'none';
+  }
+});
 function saveTask(tid) {
   const task = document.getElementById('t_task').value.trim();
   if (!task) { alert('Please enter a task.'); return; }
-  const existing = tid ? getData('timeline').find(t=>t.id===tid) : null;
+  const funcSel = document.getElementById('t_func').value;
+  const func = funcSel==='__custom__' ? (document.getElementById('t_func_custom').value.trim() || 'General') : funcSel;
   const entry = {
     id: tid || uid(),
     task,
+    function: func,
+    priority: document.getElementById('t_priority').value,
     dueDate: document.getElementById('t_due').value,
-    category: document.getElementById('t_cat').value,
+    status: document.getElementById('t_status').value,
     notes: document.getElementById('t_notes').value,
-    done: existing ? existing.done : false,
   };
-  const tasks = getData('timeline');
+  const tasks = getData('timeline').map(normalizeTask);
   if (tid) {
     const idx = tasks.findIndex(t=>t.id===tid);
     if (idx>=0) tasks[idx]=entry; else tasks.push(entry);
@@ -1364,6 +1460,7 @@ function saveTask(tid) {
     tasks.push(entry);
   }
   setData('timeline', tasks);
+  document.getElementById('task_form').innerHTML = '';
 }
 function deleteTask(id) {
   if (!confirm('Delete this task?')) return;
