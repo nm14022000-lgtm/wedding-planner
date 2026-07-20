@@ -392,6 +392,46 @@
   .kc-status-select { flex: 1; padding: 6px 8px; font-size: 12px; border-radius: 8px; }
   @media (max-width: 720px) { .kanban-board { grid-template-columns: 1fr; } }
 
+  /* ATTRIBUTION TAG */
+  .attrib-tag {
+    font-size: 11px; color: var(--gray); display: inline-flex; align-items: center; gap: 4px;
+    margin-top: 4px; font-weight: 700;
+  }
+  .attrib-avatar {
+    width: 16px; height: 16px; border-radius: 50%; background: linear-gradient(135deg, var(--rose), var(--plum-mid));
+    color: var(--white); font-size: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  /* MEMBER LIST */
+  .member-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+  .member-avatar {
+    width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--rose), var(--plum-mid));
+    color: var(--white); font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .member-name { font-weight: 700; color: var(--plum); font-size: 13.5px; }
+  .member-email { font-size: 11.5px; color: var(--gray); }
+  .member-you-badge { font-size: 10px; background: var(--rose-light); color: var(--rose); padding: 1px 8px; border-radius: 10px; font-weight: 700; margin-left: auto; }
+
+  /* CHAT PAGE */
+  .chat-wrap { display: flex; flex-direction: column; height: calc(100vh - 220px); min-height: 420px; background: var(--white); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .chat-bubble-row { display: flex; flex-direction: column; max-width: 78%; }
+  .chat-bubble-row.mine { align-self: flex-end; align-items: flex-end; }
+  .chat-bubble-row.theirs { align-self: flex-start; align-items: flex-start; }
+  .chat-sender { font-size: 11px; color: var(--gray); font-weight: 700; margin-bottom: 2px; padding: 0 4px; }
+  .chat-bubble { padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; word-break: break-word; }
+  .chat-bubble-row.mine .chat-bubble { background: var(--rose); color: var(--white); border-bottom-right-radius: 4px; }
+  .chat-bubble-row.theirs .chat-bubble { background: var(--plum-light); color: var(--plum); border-bottom-left-radius: 4px; }
+  .chat-time { font-size: 10px; color: var(--gray); margin-top: 3px; padding: 0 4px; }
+  .chat-input-row { display: flex; gap: 10px; padding: 14px; border-top: 1px solid var(--border); }
+  .chat-input-row input { flex: 1; padding: 11px 16px; border-radius: 24px; border: 1.5px solid var(--border); font-size: 14px; font-family: 'Lato', sans-serif; }
+  .chat-input-row input:focus { outline: none; border-color: var(--rose); }
+  .chat-send-btn {
+    width: 42px; height: 42px; border-radius: 50%; border: none; background: var(--rose); color: var(--white);
+    font-size: 16px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  }
+  .chat-empty { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; color: var(--gray); gap: 8px; }
+
   /* UPLOAD BTN */
   .upload-btn {
     background: var(--plum-light); color: var(--plum-mid); border: 1px dashed var(--plum-mid);
@@ -498,6 +538,7 @@ const auth = firebase.auth();
 const PAGES = [
   { id:'home',         label:'Home',          icon:'🏠' },
   { id:'timeline',     label:'Checklist',      icon:'✅' },
+  { id:'chat',         label:'Chat',           icon:'💬' },
   { id:'venue',        label:'Venue',          icon:'🏛️' },
   { id:'event',        label:'Event Planner',  icon:'📋' },
   { id:'photography',  label:'Photography',    icon:'📷' },
@@ -511,7 +552,7 @@ const PAGES = [
   { id:'mencloth',     label:'Groom Outfits',  icon:'🤵' },
 ];
 
-const CATEGORY_PAGES = PAGES.filter(p => !['home','budget','moodboard','guestlist','timeline'].includes(p.id));
+const CATEGORY_PAGES = PAGES.filter(p => !['home','budget','moodboard','guestlist','timeline','chat'].includes(p.id));
 const PAGE_COLORS = {
   venue:'#f0e8fa', event:'#fde8d8', photography:'#d8edf5',
   cinematography:'#d8f5f0',
@@ -532,6 +573,27 @@ let currentUser = null;      // Firebase auth user
 let currentHouseholdId = null;
 let householdUnsub = null;   // Firestore listener unsubscribe fn
 let appState = {};
+let householdMemberProfiles = {}; // { uid: { name, email } }
+let householdDocUnsub = null;     // keeps memberProfiles / household name live
+let chatUnsub = null;
+
+// Resolve a uid to a friendly display name for attribution / chat / member list
+function getMemberName(memberUid) {
+  if (!memberUid) return 'Someone';
+  if (currentUser && memberUid === currentUser.uid) return (currentUser.displayName || currentUser.email || 'You');
+  const p = householdMemberProfiles[memberUid];
+  return (p && (p.name || p.email)) || 'Partner';
+}
+function initials(name) {
+  if (!name) return '?';
+  return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+// Small "Added by X" tag used across entry cards
+function attributionTag(e) {
+  if (!e || !e.createdBy) return '';
+  const name = e.createdByName || getMemberName(e.createdBy);
+  return `<div class="attrib-tag"><span class="attrib-avatar">${initials(name)}</span>Added by ${name}</div>`;
+}
 
 // Fallback to fetch data from standard LocalStorage, namespaced per household
 function getDataFromLocalStorage(key) {
@@ -716,6 +778,7 @@ function entryCardHTML(pid, e) {
         </div>
         ${e.notes?`<div class="entry-notes">${e.notes}</div>`:''}
         ${e.link?`<a class="entry-link" href="${e.link}" target="_blank">🔗 ${e.link}</a>`:''}
+        ${attributionTag(e)}
       </div>
       <div class="entry-actions">
         <button class="btn-icon btn-edit" onclick="showEditForm('${pid}','${e.id}')">✏️</button>
@@ -863,6 +926,8 @@ function previewPhoto(event) {
 function saveEntry(pid, eid) {
   const name = document.getElementById('f_name').value.trim();
   if (!name) { alert('Please enter a name.'); return; }
+  const entries = getData(pid);
+  const existing = eid ? entries.find(e=>e.id===eid) : null;
   const entry = {
     id: eid || uid(),
     name,
@@ -871,8 +936,9 @@ function saveEntry(pid, eid) {
     link: document.getElementById('f_link').value,
     photo: document.getElementById('f_photo').value,
     selected: document.getElementById('f_selected').checked,
+    createdBy: existing ? existing.createdBy : currentUser.uid,
+    createdByName: existing ? existing.createdByName : (currentUser.displayName || currentUser.email || 'Someone'),
   };
-  const entries = getData(pid);
   if (eid) {
     const idx = entries.findIndex(e=>e.id===eid);
     if (idx>=0) entries[idx]=entry; else entries.push(entry);
@@ -927,6 +993,7 @@ function renderBudgetPage() {
         <div style="flex:1;min-width:120px">
           <div class="budget-cat">${item.category}</div>
           ${item.note ? `<div class="budget-note">${item.note}</div>` : ''}
+          ${attributionTag(item)}
         </div>
         <div class="budget-num">Budget: <b>৳${Number(item.budgeted || 0).toLocaleString()}</b></div>
         <div class="budget-num" style="color:${over ? '#c0392b' : '#2a6e3a'}">Spent: <b>৳${Number(spentVal || 0).toLocaleString()}</b></div>
@@ -1019,7 +1086,9 @@ function saveBudgetItem() {
     category: cat,
     budgeted: document.getElementById('bf_budget').value,
     spent: document.getElementById('bf_spent').value,
-    note: document.getElementById('bf_note').value
+    note: document.getElementById('bf_note').value,
+    createdBy: currentUser.uid,
+    createdByName: currentUser.displayName || currentUser.email || 'Someone',
   });
   setData('budget_items', items);
   renderBudgetPage();
@@ -1165,7 +1234,80 @@ function renderPage(id) {
   else if (id==='moodboard') renderMoodboardPage();
   else if (id==='guestlist') renderGuestlistPage();
   else if (id==='timeline') renderTimelinePage();
+  else if (id==='chat') renderChatPage();
   else renderCategoryPage(id);
+}
+
+// ─── CHAT PAGE ─────────────────────────────────────────────────────
+let chatMessages = [];
+function startChatSync(householdId) {
+  if (chatUnsub) { chatUnsub(); chatUnsub = null; }
+  chatMessages = [];
+  chatUnsub = db.collection('households').doc(householdId).collection('chat')
+    .orderBy('createdAt', 'asc').limitToLast(200)
+    .onSnapshot(snap => {
+      chatMessages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const activeTab = document.querySelector('.nav-tab.active');
+      const activeId = activeTab ? activeTab.id.replace('tab_','') : 'home';
+      if (activeId === 'chat') renderChatPage();
+    }, err => console.error('Chat listener failed:', err));
+}
+
+function renderChatPage() {
+  const el = document.getElementById('page_chat');
+  if (!el) return;
+  const wasNearBottom = true; // always keep pinned to latest for simplicity
+
+  const bubbles = chatMessages.map(m => {
+    const mine = currentUser && m.senderUid === currentUser.uid;
+    const name = m.senderName || getMemberName(m.senderUid);
+    const time = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+    return `
+      <div class="chat-bubble-row ${mine?'mine':'theirs'}">
+        ${!mine?`<div class="chat-sender">${name}</div>`:''}
+        <div class="chat-bubble">${escapeHtml(m.text)}</div>
+        ${time?`<div class="chat-time">${time}</div>`:''}
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="page-header" style="background:linear-gradient(135deg,#e8f0fd 0%,#fff 100%);border:1px solid rgba(100,140,200,0.2)">
+      <div><h2>💬 Couple Chat</h2><div class="meta">A private chat just between you and your partner</div></div>
+    </div>
+    <div class="chat-wrap">
+      <div class="chat-messages" id="chatMessagesEl">
+        ${chatMessages.length===0 ? '<div class="chat-empty"><div style="font-size:32px">💬</div><p>No messages yet — say hi!</p></div>' : bubbles}
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+        <button class="chat-send-btn" onclick="sendChatMessage()">➤</button>
+      </div>
+    </div>`;
+
+  const box = document.getElementById('chatMessagesEl');
+  if (box) box.scrollTop = box.scrollHeight;
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.innerText = str || '';
+  return d.innerHTML;
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || !currentHouseholdId) return;
+  input.value = '';
+  db.collection('households').doc(currentHouseholdId).collection('chat').add({
+    text,
+    senderUid: currentUser.uid,
+    senderName: currentUser.displayName || currentUser.email || 'Someone',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(err => {
+    console.error('Failed to send message:', err);
+    alert('Message failed to send. Check your connection.');
+  });
 }
 
 // ─── GUEST LIST PAGE ─────────────────────────────────────────────
@@ -1191,7 +1333,7 @@ function renderGuestlistPage() {
       </td>
       <td>${g.meal||'—'}</td>
       <td>${g.table||'—'}</td>
-      <td style="color:var(--gray);max-width:140px">${g.notes||'—'}</td>
+      <td style="color:var(--gray);max-width:140px">${g.notes||'—'}${attributionTag(g)}</td>
       <td>
         <div class="entry-actions">
           <button class="btn-icon btn-edit" onclick="showEditGuestForm('${g.id}')">✏️</button>
@@ -1277,6 +1419,8 @@ function guestFormHTML(g) {
 function saveGuest(gid) {
   const name = document.getElementById('g_name').value.trim();
   if (!name) { alert('Please enter a guest name.'); return; }
+  const guests = getData('guestlist');
+  const existing = gid ? guests.find(g=>g.id===gid) : null;
   const entry = {
     id: gid || uid(),
     name,
@@ -1286,8 +1430,9 @@ function saveGuest(gid) {
     table: document.getElementById('g_table').value,
     notes: document.getElementById('g_notes').value,
     plusOne: document.getElementById('g_plusone').checked,
+    createdBy: existing ? existing.createdBy : currentUser.uid,
+    createdByName: existing ? existing.createdByName : (currentUser.displayName || currentUser.email || 'Someone'),
   };
-  const guests = getData('guestlist');
   if (gid) {
     const idx = guests.findIndex(g=>g.id===gid);
     if (idx>=0) guests[idx]=entry; else guests.push(entry);
@@ -1350,6 +1495,7 @@ function renderTimelinePage() {
           ${t.dueDate?`<span class="kc-due ${overdue?'overdue-text':''}">📅 ${t.dueDate}${overdue?' overdue':''}</span>`:''}
         </div>
         ${t.notes?`<div class="entry-notes" style="margin-bottom:8px">${t.notes}</div>`:''}
+        ${attributionTag(t)}
         <div class="kc-actions">
           <select class="kc-status-select" onchange="updateTaskField('${t.id}','status',this.value)">
             ${STATUS_COLS.map(c=>`<option value="${c.id}" ${t.status===c.id?'selected':''}>${c.id}</option>`).join('')}
@@ -1453,6 +1599,8 @@ function saveTask(tid) {
   if (!task) { alert('Please enter a task.'); return; }
   const funcSel = document.getElementById('t_func').value;
   const func = funcSel==='__custom__' ? (document.getElementById('t_func_custom').value.trim() || 'General') : funcSel;
+  const tasks = getData('timeline').map(normalizeTask);
+  const existing = tid ? tasks.find(t=>t.id===tid) : null;
   const entry = {
     id: tid || uid(),
     task,
@@ -1461,8 +1609,9 @@ function saveTask(tid) {
     dueDate: document.getElementById('t_due').value,
     status: document.getElementById('t_status').value,
     notes: document.getElementById('t_notes').value,
+    createdBy: existing ? existing.createdBy : currentUser.uid,
+    createdByName: existing ? existing.createdByName : (currentUser.displayName || currentUser.email || 'Someone'),
   };
-  const tasks = getData('timeline').map(normalizeTask);
   if (tid) {
     const idx = tasks.findIndex(t=>t.id===tid);
     if (idx>=0) tasks[idx]=entry; else tasks.push(entry);
@@ -1546,7 +1695,10 @@ function doGoogleLogin() {
 }
 function signOutUser() {
   if (householdUnsub) { householdUnsub(); householdUnsub = null; }
+  if (householdDocUnsub) { householdDocUnsub(); householdDocUnsub = null; }
+  if (chatUnsub) { chatUnsub(); chatUnsub = null; }
   currentHouseholdId = null;
+  householdMemberProfiles = {};
   auth.signOut();
 }
 
@@ -1602,7 +1754,9 @@ function createHousehold() {
   const hhRef = db.collection('households').doc();
   hhRef.set({
     name, inviteCode: code, createdBy: currentUser.uid,
-    members: [currentUser.uid], createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    members: [currentUser.uid],
+    memberProfiles: { [currentUser.uid]: { name: currentUser.displayName || currentUser.email || 'Partner', email: currentUser.email || '' } },
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
   }).then(() => {
     return db.collection('users').doc(currentUser.uid).set({
       householdId: hhRef.id, email: currentUser.email || '', displayName: currentUser.displayName || ''
@@ -1617,7 +1771,11 @@ function joinHousehold() {
     .then(snap => {
       if (snap.empty) { showAuthError('No planner found with that code.'); return; }
       const doc = snap.docs[0];
-      return doc.ref.update({ members: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) })
+      const profileKey = 'memberProfiles.' + currentUser.uid;
+      return doc.ref.update({
+        members: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
+        [profileKey]: { name: currentUser.displayName || currentUser.email || 'Partner', email: currentUser.email || '' }
+      })
         .then(() => db.collection('users').doc(currentUser.uid).set({
           householdId: doc.id, email: currentUser.email || '', displayName: currentUser.displayName || ''
         }))
@@ -1631,7 +1789,24 @@ function enterHousehold(householdId, name) {
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('appRoot').style.display = 'block';
   startHouseholdSync(householdId);
+  startHouseholdProfileSync(householdId);
+  startChatSync(householdId);
   renderAccountPanel();
+}
+
+// Keeps household name + memberProfiles fresh in real-time (for member list, chat, attribution)
+function startHouseholdProfileSync(householdId) {
+  if (householdDocUnsub) { householdDocUnsub(); householdDocUnsub = null; }
+  householdDocUnsub = db.collection('households').doc(householdId).onSnapshot(doc => {
+    if (!doc.exists) return;
+    const data = doc.data();
+    householdMemberProfiles = data.memberProfiles || {};
+    document.getElementById('householdNameLabel').textContent = data.name || 'Wedding Planner';
+    if (document.getElementById('accountPanel').classList.contains('open')) renderAccountPanel();
+    const activeTab = document.querySelector('.nav-tab.active');
+    const activeId = activeTab ? activeTab.id.replace('tab_','') : 'home';
+    if (activeId === 'chat') renderChatPage();
+  });
 }
 
 // ─── ACCOUNT PANEL ─────────────────────────────────────────────────
@@ -1644,6 +1819,22 @@ function renderAccountPanel() {
   if (!currentHouseholdId) return;
   db.collection('households').doc(currentHouseholdId).get().then(doc => {
     const data = doc.data() || {};
+    const profiles = data.memberProfiles || {};
+    const members = data.members || [];
+    const memberRows = members.map(mUid => {
+      const p = profiles[mUid] || {};
+      const name = p.name || p.email || 'Partner';
+      const isYou = currentUser && mUid === currentUser.uid;
+      return `
+        <div class="member-row">
+          <div class="member-avatar">${initials(name)}</div>
+          <div>
+            <div class="member-name">${name}</div>
+            ${p.email?`<div class="member-email">${p.email}</div>`:''}
+          </div>
+          ${isYou?'<span class="member-you-badge">You</span>':''}
+        </div>`;
+    }).join('');
     const body = document.getElementById('accountPanelBody');
     body.innerHTML = `
       <div class="account-row"><div class="lbl">Signed in as</div>${currentUser.displayName || currentUser.email || 'You'}</div>
@@ -1655,7 +1846,7 @@ function renderAccountPanel() {
           <button class="btn-secondary" onclick="copyInviteCode('${data.inviteCode || ''}')">📋 Copy Code</button>
         </div>
       </div>
-      <div class="account-row"><div class="lbl">Members</div>${(data.members||[]).length} joined</div>
+      <div class="account-row"><div class="lbl">Members (${members.length})</div>${memberRows || '—'}</div>
       <div style="margin-top:20px"><button class="btn-cancel btn-block" onclick="signOutUser()">🚪 Sign Out</button></div>
     `;
   });
