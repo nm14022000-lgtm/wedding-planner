@@ -16,9 +16,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --rose: #2f7a5c;
-    --rose-light: #e6f2ec;
-    --rose-mid: #7cb89d;
+    --rose: #c0627a;
+    --rose-light: #f7e8ed;
+    --rose-mid: #e8b4c0;
     --plum: #3a1f5c;
     --plum-mid: #7a4fa8;
     --plum-light: #f0e8fa;
@@ -27,7 +27,7 @@
     --cream: #fdfaf6;
     --white: #ffffff;
     --gray: #8a7a8a;
-    --border: #e2ded9;
+    --border: #e8dff0;
     --shadow: 0 4px 20px rgba(60, 30, 90, 0.05);
     --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   }
@@ -40,7 +40,7 @@
     min-height: 100vh;
     min-height: 100dvh;
     background-image: 
-      radial-gradient(at 0% 0%, #e6f2ec 0px, transparent 50%),
+      radial-gradient(at 0% 0%, #f7e8ed 0px, transparent 50%),
       radial-gradient(at 100% 100%, #f0e8fa 0px, transparent 50%);
     background-attachment: fixed;
     padding-left: env(safe-area-inset-left);
@@ -513,10 +513,10 @@ const PAGES = [
 
 const CATEGORY_PAGES = PAGES.filter(p => !['home','budget','moodboard','guestlist','timeline'].includes(p.id));
 const PAGE_COLORS = {
-  venue:'#f0e8fa', event:'#fdeed8', photography:'#d8edf5',
+  venue:'#f0e8fa', event:'#fde8d8', photography:'#d8edf5',
   cinematography:'#d8f5f0',
-  makeup:'#ece0f5', otherplans:'#f5f0d8', bridecloth:'#faf0d8',
-  mencloth:'#e2e2f5'
+  makeup:'#fde8f0', otherplans:'#f5f0d8', bridecloth:'#f5d8d8',
+  mencloth:'#d8d8f5'
 };
 
 function uid() { return Math.random().toString(36).slice(2,9); }
